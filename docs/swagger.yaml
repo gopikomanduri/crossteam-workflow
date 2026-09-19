@@ -1,0 +1,161 @@
+definitions:
+  api.errorResp:
+    properties:
+      error:
+        type: string
+    type: object
+  api.operands:
+    properties:
+      x:
+        type: number
+      "y":
+        type: number
+    type: object
+  api.resultResp:
+    properties:
+      result:
+        type: number
+    type: object
+info:
+  contact: {}
+paths:
+  /add:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Operands
+        in: body
+        name: operands
+        required: true
+        schema:
+          $ref: '#/definitions/api.operands'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.resultResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errorResp'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/api.errorResp'
+      summary: Add two numbers
+      tags:
+      - calculator
+  /capabilities:
+    post:
+      description: Returns the calculator operations supported by this service.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                additionalProperties:
+                  type: string
+                type: object
+              type: array
+            type: object
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/api.errorResp'
+      summary: List supported calculator operations
+      tags:
+      - calculator
+  /divide:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Operands
+        in: body
+        name: operands
+        required: true
+        schema:
+          $ref: '#/definitions/api.operands'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.resultResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errorResp'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/api.errorResp'
+      summary: Divide the first number by the second
+      tags:
+      - calculator
+  /multiply:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Operands
+        in: body
+        name: operands
+        required: true
+        schema:
+          $ref: '#/definitions/api.operands'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.resultResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errorResp'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/api.errorResp'
+      summary: Multiply two numbers
+      tags:
+      - calculator
+  /subtract:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Operands
+        in: body
+        name: operands
+        required: true
+        schema:
+          $ref: '#/definitions/api.operands'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.resultResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errorResp'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/api.errorResp'
+      summary: Subtract the second number from the first
+      tags:
+      - calculator
+swagger: "2.0"

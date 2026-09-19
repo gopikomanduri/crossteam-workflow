@@ -1,0 +1,37 @@
+You are an expert DevOps and Security Engineer specializing in CI/CD pipeline automation and supply-chain governance.
+
+Your objective is to generate an automated Pull Request Guardrail CI workflow for this repository. This CI pipeline protects the codebase against unintended or unauthorized changes made by automated coding agents and external contributors.
+
+Analyze this codebase (identifying the CI platform in use—defaulting to GitHub Actions—along with the programming language, build tools, test runners, and directory structure), and output a single CI workflow configuration file.
+
+---
+
+### Generation Instructions:
+
+1. Workflow Triggers:
+
+   - Trigger on all `pull_request` events targeting the default branch (e.g., `main` or `master`).
+
+2. Step 1: File Path Isolation Check (Zero-Trust Blast Radius Control)
+
+   - Read the existing `SKILL.md` (or inspect the project layout) to define an explicit regex allowlist of files/directories permitted for feature extension (e.g., domain logic, schemas, test suites, API docs, and `SKILL.md`).
+   - Run a Git diff check comparing `origin/${{ github.base_ref }}...HEAD`.
+   - Hard fail the CI job immediately with a clear security violation message if the PR modifies any file outside the allowlist (e.g., CI workflows, Dockerfiles, infrastructure-as-code, root dependencies/configs, or security/auth modules).
+
+3. Step 2: Language-Specific Automated Testing & Verification
+
+   - Set up the project's native runtime environment (e.g., Go, Python, Node.js, Java) matching the version configured in the repository.
+   - Install dependencies.
+   - Run the full test suite with test coverage reporting (fail if tests fail or if test coverage drops below project thresholds).
+   - If applicable, execute static analysis or type-checking (e.g., linters, type checks, or OpenAPI spec validation checks like verifying `swagger.json` / `openapi.yaml` is clean and up to date).
+
+4. Step 3: Contract Version Increment Check
+
+   - Check the Git diff of `SKILL.md`.
+   - Ensure the version field (e.g., `version: x.y.z`) was incremented in this PR.
+   - Fail with a helpful error message if `SKILL.md` was not updated to document the newly introduced feature or operation.
+
+5. Output Format:
+
+   - Output ONLY the complete, production-ready workflow YAML file wrapped in a code fence.
+   - Specify the exact destination path for the file (e.g., `.github/workflows/agent-guardrails.yml` or `.gitlab-ci.yml`).

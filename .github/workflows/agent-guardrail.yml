@@ -1,0 +1,156 @@
+name: Agent Guardrail
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guardrail:
+    name: Validate agent change boundaries
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      SERVICE_DIR: samplecalculatorproject
+      MIN_COVERAGE: "0.0"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: File path isolation check
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags --prune --depth=1 origin "${{ github.base_ref }}"
+          changed_files="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+
+          if [[ -z "${changed_files}" ]]; then
+            echo "No changed files detected."
+            exit 0
+          fi
+
+          allowlist='^(samplecalculatorproject/(SKILL\.md|README\.md|internal/api/.*|cmd/server/.*|mcp/server/.*|mcp/cmd/server/.*|mcp/cmd/httpserver/.*|docs/swagger\.ya?ml|docs/swagger\.json|docs/docs\.go|go\.mod|go\.sum))$'
+
+          violations=()
+          while IFS= read -r file; do
+            [[ -z "${file}" ]] && continue
+            if [[ ! "${file}" =~ ${allowlist} ]]; then
+              violations+=("${file}")
+            fi
+          done <<< "${changed_files}"
+
+          if (( ${#violations[@]} > 0 )); then
+            echo "::error title=Security violation: unauthorized file path change::This PR modifies files outside the SKILL.md allowlist."
+            printf 'Unauthorized paths:\n'
+            printf ' - %s\n' "${violations[@]}"
+            echo
+            echo "Allowed paths are limited to calculator domain logic, MCP commands, tests, API docs, README, SKILL.md, and justified Go dependency files."
+            exit 1
+          fi
+
+          echo "File path isolation check passed."
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.SERVICE_DIR }}/go.mod
+          cache-dependency-path: ${{ env.SERVICE_DIR }}/go.sum
+
+      - name: Download dependencies
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go mod download
+
+      - name: Check formatting
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l .)"
+          if [[ -n "${unformatted}" ]]; then
+            echo "::error title=Go formatting violation::Run gofmt on the following files:"
+            echo "${unformatted}"
+            exit 1
+          fi
+
+      - name: Run static analysis
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: go vet ./...
+
+      - name: Run tests with coverage
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          set -euo pipefail
+          go test ./... -covermode=atomic -coverprofile=coverage.out
+          total_coverage="$(go tool cover -func=coverage.out | awk '/^total:/ { gsub("%", "", $3); print $3 }')"
+          echo "Total coverage: ${total_coverage}%"
+          awk -v coverage="${total_coverage}" -v minimum="${MIN_COVERAGE}" 'BEGIN {
+            if (coverage + 0 < minimum + 0) {
+              printf("Coverage %.1f%% is below required threshold %.1f%%\n", coverage, minimum)
+              exit 1
+            }
+          }'
+
+      - name: Validate Swagger specs are present and parseable
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          set -euo pipefail
+          test -s docs/swagger.json
+          test -s docs/swagger.yaml
+          test -s docs/docs.go
+          python -m json.tool docs/swagger.json >/dev/null
+
+      - name: Contract version increment check
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags --prune --depth=1 origin "${{ github.base_ref }}"
+          changed_files="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+
+          contract_relevant_regex='^samplecalculatorproject/(internal/api/|cmd/server/|mcp/server/|mcp/cmd/server/|mcp/cmd/httpserver/|docs/|README\.md|go\.mod|go\.sum)'
+
+          if ! grep -Eq "${contract_relevant_regex}" <<< "${changed_files}"; then
+            echo "No contract-relevant service changes detected; SKILL.md version increment not required."
+            exit 0
+          fi
+
+          if ! grep -qx 'samplecalculatorproject/SKILL.md' <<< "${changed_files}"; then
+            echo "::error title=Missing contract update::Contract-relevant changes require updating samplecalculatorproject/SKILL.md and incrementing its version field."
+            exit 1
+          fi
+
+          base_version="$(git show "origin/${{ github.base_ref }}:samplecalculatorproject/SKILL.md" | awk -F': *' '/^version:/ { print $2; exit }')"
+          head_version="$(awk -F': *' '/^version:/ { print $2; exit }' samplecalculatorproject/SKILL.md)"
+
+          if [[ -z "${base_version}" || -z "${head_version}" ]]; then
+            echo "::error title=Invalid SKILL.md version::Could not read version from base or head SKILL.md."
+            exit 1
+          fi
+
+          semver_regex='^[0-9]+\.[0-9]+\.[0-9]+$'
+          if [[ ! "${base_version}" =~ ${semver_regex} || ! "${head_version}" =~ ${semver_regex} ]]; then
+            echo "::error title=Invalid SKILL.md version::Versions must use x.y.z semantic version format. Base=${base_version}, Head=${head_version}"
+            exit 1
+          fi
+
+          IFS='.' read -r base_major base_minor base_patch <<< "${base_version}"
+          IFS='.' read -r head_major head_minor head_patch <<< "${head_version}"
+
+          if (( head_major > base_major )) ||
+             (( head_major == base_major && head_minor > base_minor )) ||
+             (( head_major == base_major && head_minor == base_minor && head_patch > base_patch )); then
+            echo "SKILL.md version increment check passed: ${base_version} -> ${head_version}"
+            exit 0
+          fi
+
+          echo "::error title=SKILL.md version not incremented::Contract-relevant changes require version to increase. Base=${base_version}, Head=${head_version}"
+          exit 1

@@ -1,0 +1,42 @@
+You are an expert Systems Architect and API Designer.
+
+Your objective is to generate an authoritative `SKILL.md` contract file for this repository so that external AI coding agents and human teams can autonomously discover its capabilities and contribute new features without human bandwidth bottlenecks.
+
+Analyze the codebase (including routing, request/response models, business logic handlers, OpenAPI/Swagger files, and existing unit tests), and output a single, complete `SKILL.md` file following this exact specification:
+
+---
+
+### Generation Instructions:
+
+1. Frontmatter:
+
+   - name: Service slug name.
+   - description: 1-2 sentence executive summary of what business or technical utility this service provides.
+   - version: Extract from existing config, or default to 1.0.0.
+   - repo-url: Repository Git URL (or placeholder if not found).
+   - allowed-tools: List of exposed MCP tool names or primary API interfaces.
+
+2. Section 1: Current Capabilities & Supported Interfaces
+
+   - Public Endpoints: List all exposed HTTP routes, verbs, and equivalent MCP tool signatures.
+   - Schema & Data Types: Detail input parameters, required fields, accepted enums, and return structures.
+   - Existing Operations: Explicit list of what the service can currently perform.
+
+3. Section 2: Capability Gap Check (For Downstream Agents)
+
+   - Explain how an external agent must check whether a requested feature already exists or can be composed using current primitives before asking for a new endpoint or operation.
+
+4. Section 3: Invariant Architecture Boundaries (Rules for Contributing AIs)
+
+   - Interface Stability: Explicit rules on preserving route paths, HTTP verbs, and backward compatibility.
+   - Code Placement: Name the exact directories/files where business logic, schema enums, and route handlers must live based on this codebase's folder structure.
+   - File Path Allowlist: List the only files/directories an automated PR is permitted to touch (e.g., domain logic, models, tests, docs, SKILL.md).
+   - Strictly Protected Paths: List forbidden paths (e.g., CI workflows, Dockerfiles, auth middleware, database configs, root build configs).
+
+5. Section 4: PR Acceptance & Quality Checklist
+
+   - Error & Edge-Case Handling: Domain-specific edge cases that must be validated (e.g., boundary values, nulls, division by zero, float overflow).
+   - Test Requirements: Minimum test expectations (unit tests covering positive, negative, and boundary conditions).
+   - Documentation & Spec Sync: Mandatory updates to OpenAPI/Swagger specs and incrementing the version in `SKILL.md`.
+
+Output ONLY the raw content of the final `SKILL.md` file wrapped in a markdown code fence.
