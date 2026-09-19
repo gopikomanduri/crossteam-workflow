@@ -1,6 +1,12 @@
 package main
 
-import "testing"
+import (
+	"context"
+	"encoding/json"
+	"testing"
+
+	"github.com/mark3labs/mcp-go/mcp"
+)
 
 func TestCalculate(t *testing.T) {
 	tests := []struct {
@@ -35,5 +41,30 @@ func TestCalculate(t *testing.T) {
 				t.Errorf("calculate() = %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestTrigonometryToolHandler(t *testing.T) {
+	result, err := trigonometryHandler(context.Background(), mcp.CallToolRequest{}, trigonometryArgs{Theta: 90})
+	if err != nil {
+		t.Fatalf("trigonometryHandler() error: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("trigonometryHandler() returned an MCP tool error")
+	}
+
+	encoded, err := json.Marshal(result.StructuredContent)
+	if err != nil {
+		t.Fatalf("marshal structured content: %v", err)
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal(encoded, &payload); err != nil {
+		t.Fatalf("unmarshal structured content: %v", err)
+	}
+	if payload["tan"] != nil || payload["sec"] != nil {
+		t.Fatalf("undefined values must be null, got %s", encoded)
+	}
+	if payload["sin"] != float64(1) || payload["cos"] != float64(0) {
+		t.Fatalf("unexpected cardinal-angle values: %s", encoded)
 	}
 }

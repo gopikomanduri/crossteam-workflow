@@ -18,6 +18,10 @@ type errorResp struct {
 	Error string `json:"error"`
 }
 
+type trigonometryRequest struct {
+	Theta *float64 `json:"theta" binding:"required"`
+}
+
 func writeJSON(w http.ResponseWriter, v interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -42,8 +46,35 @@ func Capabilities(w http.ResponseWriter, r *http.Request) {
 		{"id": "subtract", "description": "Subtract second number from first"},
 		{"id": "multiply", "description": "Multiply two numbers"},
 		{"id": "divide", "description": "Divide first number by second"},
+		{"id": "trigonometry", "description": "Evaluate trigonometric functions for an angle in degrees"},
 	}
 	writeJSON(w, map[string]interface{}{"operations": ops}, http.StatusOK)
+}
+
+// TrigonometryHandler godoc
+// @Summary Evaluate trigonometric functions for an angle in degrees
+// @Description Returns sin, cos, tan, cosec, sec, and cot. Undefined reciprocal values are null.
+// @Tags calculator
+// @Accept json
+// @Produce json
+// @Param request body trigonometryRequest true "Angle in degrees"
+// @Success 200 {object} TrigonometryResult
+// @Failure 400 {object} errorResp
+// @Failure 405 {object} errorResp
+// @Router /trigonometry [post]
+func TrigonometryHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, errorResp{Error: "method not allowed"}, http.StatusMethodNotAllowed)
+		return
+	}
+	var request trigonometryRequest
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&request); err != nil || request.Theta == nil {
+		writeJSON(w, errorResp{Error: "invalid JSON body"}, http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, Trigonometry(*request.Theta), http.StatusOK)
 }
 
 func decodeOperands(r *http.Request) (operands, *errorResp) {

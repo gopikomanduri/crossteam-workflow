@@ -1,18 +1,20 @@
 ---
 name: sample-calculator
-description: Minimal Go calculator service exposing arithmetic operations through both HTTP JSON endpoints and MCP tools. It supports add, subtract, multiply, divide, and operation discovery for API clients and AI agents.
-version: 1.0.0
+description: Minimal Go calculator service exposing arithmetic and trigonometric operations through both HTTP JSON endpoints and MCP tools. It supports add, subtract, multiply, divide, trigonometry, and operation discovery for API clients and AI agents.
+version: 1.1.0
 repo-url: TODO: repository Git URL not found in workspace
 allowed-tools:
   - add
   - subtract
   - multiply
   - divide
+  - trigonometry
   - capabilities
   - HTTP POST /add
   - HTTP POST /subtract
   - HTTP POST /multiply
   - HTTP POST /divide
+  - HTTP POST /trigonometry
   - HTTP POST /capabilities
   - MCP stdio server: go run ./mcp/cmd/server
   - MCP Streamable HTTP server: go run ./mcp/cmd/httpserver
@@ -45,6 +47,7 @@ Exposed routes:
 | `/subtract` | `POST` | `{ "x": number, "y": number }` | `{ "result": number }` | `400 { "error": "invalid JSON body" }`, `405 { "error": "method not allowed" }` |
 | `/multiply` | `POST` | `{ "x": number, "y": number }` | `{ "result": number }` | `400 { "error": "invalid JSON body" }`, `405 { "error": "method not allowed" }` |
 | `/divide` | `POST` | `{ "x": number, "y": number }` | `{ "result": number }` | `400 { "error": "invalid JSON body" }`, `400 { "error": "division by zero" }`, `405 { "error": "method not allowed" }` |
+| `/trigonometry` | `POST` | `{ "theta": number }` (degrees) | `{ "sin": number, "cos": number, "tan": number \| null, "cosec": number \| null, "sec": number \| null, "cot": number \| null }` | `400 { "error": "invalid JSON body" }`, `405 { "error": "method not allowed" }` |
 
 ### MCP Stdio Interface
 
@@ -61,6 +64,7 @@ add(x: number, y: number) -> { result: number }
 subtract(x: number, y: number) -> { result: number }
 multiply(x: number, y: number) -> { result: number }
 divide(x: number, y: number) -> { result: number } | tool error "division by zero"
+trigonometry(theta: number) -> { sin: number, cos: number, tan: number | null, cosec: number | null, sec: number | null, cot: number | null }
 capabilities() -> { operations: [{ id: string, description: string }] }
 ```
 
@@ -149,6 +153,21 @@ HTTP JSON decoding uses `DisallowUnknownFields`, so unknown fields in request bo
 |---|---|---|---|
 | `result` | `number` / Go `float64` | yes | Arithmetic result |
 
+### `trigonometryRequest`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `theta` | `number` / Go `float64` | yes | Angle in degrees |
+
+### `TrigonometryResult`
+
+| Field | Type | Description |
+|---|---|---|
+| `sin`, `cos` | `number` / Go `float64` | Evaluated standard trigonometric values |
+| `tan`, `cosec`, `sec`, `cot` | `number` / `null` | Evaluated values; `null` when mathematically undefined |
+
+Angles are converted internally with `radians = theta * math.Pi / 180`. Values sufficiently close to zero are normalized to `0` to avoid cardinal-angle floating-point artifacts. `tan` and `sec` are `null` when cosine is zero; `cot` and `cosec` are `null` when sine is zero.
+
 ### `errorResp`
 
 ```json
@@ -169,7 +188,8 @@ HTTP JSON decoding uses `DisallowUnknownFields`, so unknown fields in request bo
     { "id": "add", "description": "Add two numbers" },
     { "id": "subtract", "description": "Subtract second number from first" },
     { "id": "multiply", "description": "Multiply two numbers" },
-    { "id": "divide", "description": "Divide first number by second" }
+    { "id": "divide", "description": "Divide first number by second" },
+    { "id": "trigonometry", "description": "Evaluate trigonometric functions for an angle in degrees" }
   ]
 }
 ```
@@ -183,6 +203,8 @@ The service can currently perform exactly these operations:
 - Multiply two numbers.
 - Divide the first number by the second.
 - Reject division by zero.
+- Evaluate sin, cos, tan, cosec, sec, and cot from an angle in degrees.
+- Return `null` for undefined trigonometric reciprocal values.
 - List supported calculator operations.
 - Serve calculator operations through HTTP JSON routes.
 - Serve calculator operations as MCP tools over stdio.

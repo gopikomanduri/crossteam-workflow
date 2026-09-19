@@ -14,6 +14,7 @@ func main() {
 	mux.HandleFunc("/subtract", api.Subtract)
 	mux.HandleFunc("/multiply", api.Multiply)
 	mux.HandleFunc("/divide", api.Divide)
+	mux.HandleFunc("/trigonometry", api.TrigonometryHandler)
 
 	addr := ":8080"
 	log.Printf("starting server on %s", addr)

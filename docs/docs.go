@@ -230,9 +230,78 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/trigonometry": {
+            "post": {
+                "description": "Returns sin, cos, tan, cosec, sec, and cot. Undefined reciprocal values are null.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "calculator"
+                ],
+                "summary": "Evaluate trigonometric functions for an angle in degrees",
+                "parameters": [
+                    {
+                        "description": "Angle in degrees",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.trigonometryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TrigonometryResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.errorResp"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/api.errorResp"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "api.TrigonometryResult": {
+            "type": "object",
+            "properties": {
+                "cos": {
+                    "type": "number"
+                },
+                "cosec": {
+                    "type": "number"
+                },
+                "cot": {
+                    "type": "number"
+                },
+                "sec": {
+                    "type": "number"
+                },
+                "sin": {
+                    "type": "number"
+                },
+                "tan": {
+                    "type": "number"
+                }
+            }
+        },
         "api.errorResp": {
             "type": "object",
             "properties": {
@@ -256,6 +325,17 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "result": {
+                    "type": "number"
+                }
+            }
+        },
+        "api.trigonometryRequest": {
+            "type": "object",
+            "required": [
+                "theta"
+            ],
+            "properties": {
+                "theta": {
                     "type": "number"
                 }
             }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"samplecalculatorproject/internal/api"
 )
 
 type calculateArgs struct {
@@ -20,10 +21,14 @@ type result struct {
 	Result float64 `json:"result"`
 }
 
+type trigonometryArgs struct {
+	Theta float64 `json:"theta"`
+}
+
 func main() {
 	mcpServer := server.NewMCPServer(
 		"sample-calculator",
-		"1.0.0",
+		"1.1.0",
 		server.WithToolCapabilities(false),
 	)
 
@@ -50,6 +55,13 @@ func envOrDefault(key, fallback string) string {
 }
 
 func addCalculatorTools(mcpServer *server.MCPServer) {
+	mcpServer.AddTool(
+		mcp.NewTool("trigonometry",
+			mcp.WithDescription("Evaluate sin, cos, tan, cosec, sec, and cot for an angle in degrees. Undefined reciprocal values are null."),
+			mcp.WithNumber("theta", mcp.Required(), mcp.Description("Angle in degrees.")),
+		),
+		mcp.NewTypedToolHandler(trigonometryHandler),
+	)
 	mcpServer.AddTool(
 		mcp.NewTool("add",
 			mcp.WithDescription("Add two numbers."),
@@ -90,6 +102,10 @@ func addCalculatorTools(mcpServer *server.MCPServer) {
 	)
 }
 
+func trigonometryHandler(_ context.Context, _ mcp.CallToolRequest, args trigonometryArgs) (*mcp.CallToolResult, error) {
+	return mcp.NewToolResultJSON(api.Trigonometry(args.Theta))
+}
+
 func operationHandler(operation string) func(context.Context, mcp.CallToolRequest, calculateArgs) (*mcp.CallToolResult, error) {
 	return func(_ context.Context, _ mcp.CallToolRequest, args calculateArgs) (*mcp.CallToolResult, error) {
 		value, err := calculate(operation, args.X, args.Y)
@@ -107,6 +123,7 @@ func capabilitiesHandler(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToo
 			{"id": "subtract", "description": "Subtract second number from first"},
 			{"id": "multiply", "description": "Multiply two numbers"},
 			{"id": "divide", "description": "Divide first number by second"},
+			{"id": "trigonometry", "description": "Evaluate trigonometric functions for an angle in degrees"},
 		},
 	})
 }

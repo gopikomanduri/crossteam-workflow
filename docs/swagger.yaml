@@ -1,4 +1,19 @@
 definitions:
+  api.TrigonometryResult:
+    properties:
+      cos:
+        type: number
+      cosec:
+        type: number
+      cot:
+        type: number
+      sec:
+        type: number
+      sin:
+        type: number
+      tan:
+        type: number
+    type: object
   api.errorResp:
     properties:
       error:
@@ -15,6 +30,13 @@ definitions:
     properties:
       result:
         type: number
+    type: object
+  api.trigonometryRequest:
+    properties:
+      theta:
+        type: number
+    required:
+    - theta
     type: object
 info:
   contact: {}
@@ -156,6 +178,37 @@ paths:
           schema:
             $ref: '#/definitions/api.errorResp'
       summary: Subtract the second number from the first
+      tags:
+      - calculator
+  /trigonometry:
+    post:
+      consumes:
+      - application/json
+      description: Returns sin, cos, tan, cosec, sec, and cot. Undefined reciprocal
+        values are null.
+      parameters:
+      - description: Angle in degrees
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.trigonometryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.TrigonometryResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.errorResp'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/api.errorResp'
+      summary: Evaluate trigonometric functions for an angle in degrees
       tags:
       - calculator
 swagger: "2.0"
