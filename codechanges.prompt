@@ -1,0 +1,51 @@
+You are contributing a new capability to this service (project in samplecalculatorproject) on behalf of a stakeholder team (samplecalculatorprojectclient).
+
+Read SKILL.md carefully before making any edits. Follow all invariant boundaries, permitted file paths, and contribution rules strictly.
+
+---
+
+### Objective:
+
+Add a new feature to compute trigonometric values.
+
+- Input: An angle `theta` in degrees (real number / float).
+- Output: An object or map containing evaluated values for:
+  - sin(theta)
+  - cos(theta)
+  - tan(theta)
+  - cosec(theta)
+  - sec(theta)
+  - cot(theta)
+
+---
+
+### Implementation Requirements:
+
+1. Interface & Architecture:
+
+   - Check SKILL.md to see if this fits into the existing `/calculate` route or requires an extension.
+   - Note that degrees must be converted to radians internally (`rad = theta * math.Pi / 180`).
+   - Implement the mathematical logic cleanly within the designated domain/operations directory.
+   - Update the MCP tool definition (e.g., in cmd/mcp/main.go) so agent clients can invoke this new capability.
+
+2. Domain Edge Cases & Validations:
+
+   - Undefined Values (Division by zero / Asymptotes):
+     - tan(theta) and sec(theta) are undefined when cos(theta) == 0 (e.g., 90°, 270°, etc.).
+     - cot(theta) and cosec(theta) are undefined when sin(theta) == 0 (e.g., 0°, 180°, 360°, etc.).
+     - Return appropriate error indicators, NaN, null, or explicit messages for undefined states rather than crashing with division-by-zero.
+   - Floating-Point Precision:
+     - Use standard Go `math` library functions, ensuring values like sin(180°) or cos(90°) properly round near-zero artifacts (e.g., 1e-16 to 0).
+
+3. Tests:
+
+   - Add unit tests in the designated test files covering:
+     - Standard angles: 0°, 30°, 45°, 60°, 90°.
+     - Negative angles and angles greater than 360°.
+     - Asymptote / undefined boundary checks (e.g., tan(90°), cosec(0°)).
+
+4. Contract & Guardrails Compliance:
+
+   - Do NOT edit any files outside the allowed directories specified in SKILL.md (do NOT touch CI workflows, Dockerfiles, or root deployment configs).
+   - Re-generate documentation / Swagger specs if required by the project.
+   - Update SKILL.md to document this new trigonometric capability and bump its version (e.g., to 1.1.0).
